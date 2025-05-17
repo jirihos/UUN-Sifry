@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+alphabet = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 
 def prolom_substitute(text: str, TM_ref: np.ndarray, iter: int, start_key: str):
     pass
@@ -16,6 +16,7 @@ def get_bigrams(text: str) -> list[str]:
 
 def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
     n = len(alphabet)
+
     TM = pd.DataFrame(
         np.zeros((n, n), dtype=int),
         index=alphabet,
