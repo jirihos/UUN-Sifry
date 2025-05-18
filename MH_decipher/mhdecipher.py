@@ -3,7 +3,7 @@ import pandas as pd
 
 alphabet = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 
-def prolom_substitute(text: str, TM_ref: np.ndarray, iter: int, start_key: str):
+def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str):
     pass
 
 def get_bigrams(text: str) -> list[str]:
@@ -35,27 +35,22 @@ def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
 
     return TM
 
-def plausibility(text: str, TM_ref: np.ndarray):
+def plausibility(text: str, TM_ref: pd.DataFrame):
     pass
 
 def substitute_encrypt(plaintext: str, key: str) -> str:
-
-    """
-    Coding plaintext by replacing dictionary values for key values
+    """Encrypts the plaintext using a substitution cipher.
     
     Args:
-    plaintext (str): Input string for coding
-    key (str): key for coding 
+        plaintext (str): Text to be encrypted.
+        key (str): Substitution key.
 
-    returns:
-    string (encrypted_text)
-    """
-
-    mapping = {}
-    encrypted_text = ""
+    Returns:
+        str: Resulting ciphertext.
     
-    key = key.upper()
-    plaintext = plaintext.upper() 
+    Raises:
+        TODO
+    """
 
     if len(key) != len(alphabet): # error wrong key length compared to "alphabet" length
         raise ValueError("Wrong key length")
@@ -63,10 +58,12 @@ def substitute_encrypt(plaintext: str, key: str) -> str:
     for keyCharacter in key: # error if any duplicity in key (decoding with duplicity in "key" is not possible)
         if key.count(keyCharacter) > 1:
             raise ValueError("Duplicity in key, coding is not possible")
-
+    
+    mapping = {}
     for i in range(len(alphabet)): # map "key" values to "dictionary" 
         mapping[alphabet[i]] = key[i]
 
+    encrypted_text = ""
     for character in plaintext: # add character to "encrypted_text"
         if character in mapping: # if exist in "mapping"
             encrypted_text += mapping[character]
@@ -76,23 +73,18 @@ def substitute_encrypt(plaintext: str, key: str) -> str:
     return encrypted_text
 
 def substitute_decrypt(ciphertext: str, key: str) -> str:
-
-    """
-    Decoding ciphertext by replacing key values for dictionary values
+    """Decrypts the ciphertext using a substitution cipher.
     
     Args:
-    ciphertext (str): Input string for decoding
-    key (str): key for decoding 
+        ciphertext (str): Text to be decrypted.
+        key (str): Substitution key.
 
-    returns:
-    string (plaintext)
-    """
-
-    reverse_mapping = {}
-    decrypted_text = ""
+    Returns:
+        str: Resulting plaintext.
     
-    key = key.upper()
-    ciphertext = ciphertext.upper() 
+    Raises:
+        TODO
+    """
 
     if len(key) != len(alphabet): # error wrong key length compared to "alphabet" length
         raise ValueError("Wrong key length")
@@ -101,9 +93,11 @@ def substitute_decrypt(ciphertext: str, key: str) -> str:
         if key.count(keyCharacter) > 1:
             raise ValueError("Duplicity in key, decoding is not possible")
 
+    reverse_mapping = {}
     for i in range(len(alphabet)): # map dictionary to key values
         reverse_mapping[key[i]] = alphabet[i]
 
+    decrypted_text = ""
     for character in ciphertext: # add character to "decrypted_text"
         if character in reverse_mapping: # if exist in "reverse_mapping"
             decrypted_text += reverse_mapping[character]
