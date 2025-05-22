@@ -1,10 +1,57 @@
 import numpy as np
 import pandas as pd
+import random
 
 alphabet = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 
 def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str):
-    pass
+
+    """
+    Decoding ciphertext by replacing key values for dictionary values
+    
+    Args:
+    text (str) text for decoding
+    TM_ref (list) list of common bigrams from language to be decoded
+    iter (int) number of iterations
+    start_key (list[str]) random decoding key
+
+    Returns:
+        tuple:
+            current_key (list[str]) last key which function tried to decrypt text
+            best_decrypted_text (str) best decrypted text
+            p_current (float) Plausibility score of the best decrypted text.
+    
+    """
+    
+    current_key = start_key
+
+    decrypted_current = substitute_decrypt(text, "".join(current_key))
+    p_current = plausibility(decrypted_current, TM_ref)
+
+    for i in range(iter):
+        candidate_key = current_key.copy()
+        indices = random.sample(alphabet, 2)
+        
+        indice1 = candidate_key.index(indices[0])
+        indice2 = candidate_key.index(indices[1])
+        candidate_key[indice1], candidate_key[indice2] = candidate_key[indice2], candidate_key[indice1]
+        
+        decrypted_candidate = substitute_decrypt(text, "".join(candidate_key))
+        p_candidate = plausibility(decrypted_candidate, TM_ref)
+        q = p_candidate / p_current
+
+        if q > 1:
+            current_key = candidate_key
+            p_current = p_candidate
+        elif random.uniform(0, 1) < 0.01:
+            current_key = candidate_key
+            p_current = p_candidate
+        elif (i % 50) == 0:
+            print("Iteration", i, "log plausibility:", p_current)
+
+    best_decrypted_text = substitute_decrypt(text, "".join(current_key))
+    
+    return (current_key, best_decrypted_text, p_current)
 
 def get_bigrams(text: str) -> list[str]:
     """
@@ -92,7 +139,8 @@ def substitute_encrypt(plaintext: str, key: str) -> str:
         str: Resulting ciphertext.
     
     Raises:
-        TODO
+        ValueError: If the key length does not match the alphabet length.
+        ValueError: If there is duplicity of characters in the key.
     """
 
     if len(key) != len(alphabet): # error wrong key length compared to "alphabet" length
@@ -103,7 +151,7 @@ def substitute_encrypt(plaintext: str, key: str) -> str:
             raise ValueError("Duplicity in key, coding is not possible")
     
     mapping = {}
-    for i in range(len(alphabet)): # map "key" values to "dictionary" 
+    for i in range(len(alphabet)): # map "key" values to "dictionary"
         mapping[alphabet[i]] = key[i]
 
     encrypted_text = ""
@@ -111,7 +159,7 @@ def substitute_encrypt(plaintext: str, key: str) -> str:
         if character in mapping: # if exist in "mapping"
             encrypted_text += mapping[character]
         else:
-           encrypted_text += character
+            encrypted_text += character
 
     return encrypted_text
 
@@ -126,7 +174,8 @@ def substitute_decrypt(ciphertext: str, key: str) -> str:
         str: Resulting plaintext.
     
     Raises:
-        TODO
+        ValueError: If the key length does not match the alphabet length.
+        ValueError: If there is duplicity of characters in the key.
     """
 
     if len(key) != len(alphabet): # error wrong key length compared to "alphabet" length
@@ -145,6 +194,6 @@ def substitute_decrypt(ciphertext: str, key: str) -> str:
         if character in reverse_mapping: # if exist in "reverse_mapping"
             decrypted_text += reverse_mapping[character]
         else:
-           decrypted_text += character
+            decrypted_text += character
 
     return decrypted_text
