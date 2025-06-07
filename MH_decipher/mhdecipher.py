@@ -94,7 +94,7 @@ def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
 
     Raises:
         NameError: If the global variable `alphabet` is not defined.
-
+	"""
     n = len(alphabet)
 
     TM = pd.DataFrame(
