@@ -114,6 +114,9 @@ def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
     TM.replace(0, 1, inplace=True)
 
     TM = TM.div(TM.sum(axis=1).replace(0, 1), axis=0)
+    
+    row_sums = TM.sum(axis=1)
+	print("Maximum deviation from 1:", abs(row_sums - 1).max())
 
     return TM
 
