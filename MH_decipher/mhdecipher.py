@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import random
+import math
 
 alphabet = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 
@@ -120,8 +121,29 @@ def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
 
     return TM
 
-def plausibility(text: str, TM_ref: pd.DataFrame):
-    pass
+def plausibility(text: str, TM_ref: pd.DataFrame) -> float:
+    """
+    Calculates the log-likelihood (plausibility) of a text based on a reference transition matrix.
+
+    Args:
+        text (str): The decrypted text to evaluate.
+        TM_ref (pd.DataFrame): Reference transition matrix (relative frequencies of bigrams).
+
+    Returns:
+        float: The log-likelihood score based on how well the text matches the reference matrix.
+    """
+    import math
+
+    bigrams_obs = get_bigrams(text)
+    TM_obs = transition_matrix(bigrams_obs)
+
+    likelihood = 0.0
+    for i in alphabet:
+        for j in alphabet:
+            likelihood += math.log(TM_ref.loc[i, j]) * TM_obs.loc[i, j]
+
+    return likelihood
+
 
 def substitute_encrypt(plaintext: str, key: str) -> str:
     """Encrypts the plaintext using a substitution cipher.
