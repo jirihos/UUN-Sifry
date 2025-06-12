@@ -6,7 +6,6 @@ import math
 alphabet = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 
 def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str):
-
     """
     Decoding ciphertext by replacing key values for dictionary values
     
@@ -26,33 +25,42 @@ def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str
     
     current_key = start_key
 
-    decrypted_current = substitute_decrypt(text, "".join(current_key))
+    decrypted_current = substitute_decrypt(text, current_key)
     p_current = plausibility(decrypted_current, TM_ref)
 
+    best_key = current_key
+    p_best = p_current
+
     for i in range(iter):
-        candidate_key = current_key.copy()
-        indices = random.sample(alphabet, 2)
+        candidate_key = current_key
+
+        # swap 2 letters
+        index1, index2 = random.sample(range(len(alphabet)), 2)
+        candidate_key = list(candidate_key)
+        candidate_key[index1], candidate_key[index2] = candidate_key[index2], candidate_key[index1]
+        candidate_key = "".join(candidate_key)
         
-        indice1 = candidate_key.index(indices[0])
-        indice2 = candidate_key.index(indices[1])
-        candidate_key[indice1], candidate_key[indice2] = candidate_key[indice2], candidate_key[indice1]
-        
-        decrypted_candidate = substitute_decrypt(text, "".join(candidate_key))
+        decrypted_candidate = substitute_decrypt(text, candidate_key)
         p_candidate = plausibility(decrypted_candidate, TM_ref)
-        q = p_candidate / p_current
+        q = p_current / p_candidate
 
         if q > 1:
             current_key = candidate_key
             p_current = p_candidate
-        elif random.uniform(0, 1) < 0.01:
+        elif random.uniform(0, 1) < 0.001:
             current_key = candidate_key
             p_current = p_candidate
-        elif (i % 50) == 0:
+
+        if p_current > p_best:
+            best_key = current_key
+            p_best = p_current
+
+        if (i % 50) == 0:
             print("Iteration", i, "log plausibility:", p_current)
 
-    best_decrypted_text = substitute_decrypt(text, "".join(current_key))
-    
-    return (current_key, best_decrypted_text, p_current)
+    best_decrypted_text = substitute_decrypt(text, best_key)
+
+    return (best_key, best_decrypted_text, p_best)
 
 def get_bigrams(text: str) -> list[str]:
     """
@@ -129,15 +137,14 @@ def plausibility(text: str, TM_ref: pd.DataFrame) -> float:
     Returns:
         float: The log-likelihood score based on how well the text matches the reference matrix.
     """
-    import math
 
     bigrams_obs = get_bigrams(text)
     TM_obs = transition_matrix(bigrams_obs)
 
     likelihood = 0.0
-    for i in alphabet:
-        for j in alphabet:
-            likelihood += math.log(TM_ref.loc[i, j]) * TM_obs.loc[i, j]
+    for i in range(len(alphabet)):
+        for j in range(len(alphabet)):
+            likelihood += math.log(TM_ref.iat[i, j]) * TM_obs.iat[i, j]
 
     return likelihood
 
