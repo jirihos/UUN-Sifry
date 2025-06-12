@@ -105,12 +105,7 @@ def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
         NameError: If the global variable `alphabet` is not defined.
 	"""
     n = len(alphabet)
-
-    TM = pd.DataFrame(
-        np.zeros((n, n), dtype=int),
-        index=alphabet,
-        columns=alphabet
-    )
+    arr = np.zeros((n, n), dtype=int)
 
     for bigram in bigrams:
         c1 = bigram[0]
@@ -118,7 +113,13 @@ def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
         if c1 in alphabet and c2 in alphabet:
             i = alphabet.index(c1)
             j = alphabet.index(c2)
-            TM.iat[i, j] += 1
+            arr[i, j] += 1
+
+    TM = pd.DataFrame(
+        arr,
+        index=alphabet,
+        columns=alphabet
+    )
 
     TM.replace(0, 1, inplace=True)
 
@@ -141,10 +142,9 @@ def plausibility(text: str, TM_ref: pd.DataFrame) -> float:
     bigrams_obs = get_bigrams(text)
     TM_obs = transition_matrix(bigrams_obs)
 
-    likelihood = 0.0
-    for i in range(len(alphabet)):
-        for j in range(len(alphabet)):
-            likelihood += math.log(TM_ref.iat[i, j]) * TM_obs.iat[i, j]
+    TM_ref = np.asarray(TM_ref)
+    TM_obs = np.asarray(TM_obs)
+    likelihood = np.sum(np.log(TM_ref) * TM_obs)
 
     return likelihood
 
