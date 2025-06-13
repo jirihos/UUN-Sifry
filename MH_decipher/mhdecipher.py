@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 import random
-import math
 
-alphabet = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
+alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_"
 
 def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str):
     """Attempts to decode the text using the Metropolis-Hastings (M-H) algorithm
@@ -113,10 +112,11 @@ def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
             j = alphabet.index(c2)
             arr[i, j] += 1
 
+    alphabet_list = list(alphabet)
     TM = pd.DataFrame(
         arr,
-        index=alphabet,
-        columns=alphabet
+        index=alphabet_list,
+        columns=alphabet_list
     )
 
     # Replace zeros with ones
