@@ -6,21 +6,18 @@ import math
 alphabet = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 
 def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str):
-    """
-    Decoding ciphertext by replacing key values for dictionary values
+    """Attempts to decode the text using the Metropolis-Hastings (M-H) algorithm
     
     Args:
-    text (str) text for decoding
-    TM_ref (list) list of common bigrams from language to be decoded
-    iter (int) number of iterations
-    start_key (list[str]) random decoding key
+        text (str): Ciphertext for decoding.
+        TM_ref (pd.DataFrame): Reference relative transition matrix.
+        iter (int): The number of iterations.
+        start_key (str): Initial key.
 
     Returns:
-        tuple:
-            current_key (list[str]) last key which function tried to decrypt text
-            best_decrypted_text (str) best decrypted text
-            p_current (float) Plausibility score of the best decrypted text.
-    
+        A tuple (key, decrypted_text, p), where key is the best found key,
+        decrypted_text is the text decrypted using the key, and p is
+        the plausibility of the decrypted text.
     """
     
     current_key = start_key
@@ -34,27 +31,30 @@ def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str
     for i in range(iter):
         candidate_key = current_key
 
-        # swap 2 letters
+        # Swap 2 letters
         index1, index2 = random.sample(range(len(alphabet)), 2)
         candidate_key = list(candidate_key)
         candidate_key[index1], candidate_key[index2] = candidate_key[index2], candidate_key[index1]
         candidate_key = "".join(candidate_key)
-        
+
+        # Calculate the plausibility
         decrypted_candidate = substitute_decrypt(text, candidate_key)
         p_candidate = plausibility(decrypted_candidate, TM_ref)
         q = p_current / p_candidate
 
-        if q > 1:
+        if q > 1: # accept the candidate key, if its plausibility is higher than the plausibility of the current key
             current_key = candidate_key
             p_current = p_candidate
-        elif random.uniform(0, 1) < 0.001:
+        elif random.uniform(0, 1) < 0.001: # small chance of accepting the candidate key even if its plausibility is lower
             current_key = candidate_key
             p_current = p_candidate
 
+        # Remember the best key
         if p_current > p_best:
             best_key = current_key
             p_best = p_current
 
+        # Log progress
         if (i % 50) == 0:
             print("Iteration", i, "log plausibility:", p_current)
 
@@ -62,9 +62,9 @@ def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str
 
     return (best_key, best_decrypted_text, p_best)
 
+
 def get_bigrams(text: str) -> list[str]:
-    """
-    Generates a list of bigrams (two-character combinations) from the input string.
+    """Generates a list of bigrams (two-character combinations) from the input string.
 
     Args:
         text (str): The input string from which bigrams will be generated.
@@ -76,6 +76,7 @@ def get_bigrams(text: str) -> list[str]:
         >>> get_bigrams("hello")
         ['he', 'el', 'll', 'lo']
     """
+
     bigrams_list = []
     n = len(text)
     for i in range(1, n):
@@ -85,13 +86,11 @@ def get_bigrams(text: str) -> list[str]:
 
 
 def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
-    """
-    Constructs a relative transition matrix from a list of bigrams.
+    """Constructs a relative transition matrix from a list of bigrams.
 
     The matrix counts normalized (relative) frequencies of transitions from one character
     to another based on the provided bigrams. If a character in a bigram is not found
-    in the global `alphabet`, that bigram is ignored. Zeros are replaced by ones before
-    normalization to avoid division by zero.
+    in the global `alphabet`, that bigram is ignored.
 
     Args:
         bigrams (list[str]): A list of bigrams (two-character strings) from which to build the transition matrix.
@@ -99,14 +98,13 @@ def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A square pandas DataFrame with rows and columns labeled by characters from `alphabet`.
                       Each cell (i, j) contains the relative frequency of transitions from character `alphabet[i]`
-                      to `alphabet[j`]`, i.e. probabilities summing to 1 per row.
-
-    Raises:
-        NameError: If the global variable `alphabet` is not defined.
+                      to `alphabet[j]`.
 	"""
+
     n = len(alphabet)
     arr = np.zeros((n, n), dtype=int)
 
+    # Build the absolute transition matrix
     for bigram in bigrams:
         c1 = bigram[0]
         c2 = bigram[1]
@@ -121,22 +119,24 @@ def transition_matrix(bigrams: list[str]) -> pd.DataFrame:
         columns=alphabet
     )
 
+    # Replace zeros with ones
     TM.replace(0, 1, inplace=True)
 
+    # Convert to relative transition matrix
     TM = TM.div(TM.sum().sum())
 
     return TM
 
+
 def plausibility(text: str, TM_ref: pd.DataFrame) -> float:
-    """
-    Calculates the log-likelihood (plausibility) of a text based on a reference transition matrix.
+    """Calculates the likelihood (plausibility) of a text based on a reference transition matrix.
 
     Args:
-        text (str): The decrypted text to evaluate.
-        TM_ref (pd.DataFrame): Reference transition matrix (relative frequencies of bigrams).
+        text (str): The text to evaluate.
+        TM_ref (pd.DataFrame): Reference transition matrix.
 
     Returns:
-        float: The log-likelihood score based on how well the text matches the reference matrix.
+        float: The likelihood score based on how well the text matches the reference matrix.
     """
 
     bigrams_obs = get_bigrams(text)
@@ -164,25 +164,26 @@ def substitute_encrypt(plaintext: str, key: str) -> str:
         ValueError: If there is duplicity of characters in the key.
     """
 
-    if len(key) != len(alphabet): # error wrong key length compared to "alphabet" length
+    if len(key) != len(alphabet):
         raise ValueError("Wrong key length")
 
-    for keyCharacter in key: # error if any duplicity in key (decoding with duplicity in "key" is not possible)
+    for keyCharacter in key: # error if any duplicity in key
         if key.count(keyCharacter) > 1:
             raise ValueError("Duplicity in key, coding is not possible")
-    
+
     mapping = {}
-    for i in range(len(alphabet)): # map "key" values to "dictionary"
+    for i in range(len(alphabet)):
         mapping[alphabet[i]] = key[i]
 
     encrypted_text = ""
-    for character in plaintext: # add character to "encrypted_text"
-        if character in mapping: # if exist in "mapping"
+    for character in plaintext:
+        if character in mapping:
             encrypted_text += mapping[character]
         else:
             encrypted_text += character
 
     return encrypted_text
+
 
 def substitute_decrypt(ciphertext: str, key: str) -> str:
     """Decrypts the ciphertext using a substitution cipher.
@@ -199,20 +200,20 @@ def substitute_decrypt(ciphertext: str, key: str) -> str:
         ValueError: If there is duplicity of characters in the key.
     """
 
-    if len(key) != len(alphabet): # error wrong key length compared to "alphabet" length
+    if len(key) != len(alphabet):
         raise ValueError("Wrong key length")
 
-    for keyCharacter in key: # error if any duplicity in key (decoding with duplicity in "key" is not possible)
+    for keyCharacter in key: # error if any duplicity in key
         if key.count(keyCharacter) > 1:
             raise ValueError("Duplicity in key, decoding is not possible")
 
     reverse_mapping = {}
-    for i in range(len(alphabet)): # map dictionary to key values
+    for i in range(len(alphabet)):
         reverse_mapping[key[i]] = alphabet[i]
 
     decrypted_text = ""
-    for character in ciphertext: # add character to "decrypted_text"
-        if character in reverse_mapping: # if exist in "reverse_mapping"
+    for character in ciphertext:
+        if character in reverse_mapping:
             decrypted_text += reverse_mapping[character]
         else:
             decrypted_text += character
