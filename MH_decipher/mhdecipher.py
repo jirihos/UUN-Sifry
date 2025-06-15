@@ -4,21 +4,24 @@ import random
 
 alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_"
 
-def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str):
+def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str | None = None):
     """Attempts to decode the text using the Metropolis-Hastings (M-H) algorithm
     
     Args:
         text (str): Ciphertext for decoding.
         TM_ref (pd.DataFrame): Reference relative transition matrix.
         iter (int): The number of iterations.
-        start_key (str): Initial key.
+        start_key (str): Initial key. A random one is generated if None.
 
     Returns:
         A tuple (key, decrypted_text, p), where key is the best found key,
         decrypted_text is the text decrypted using the key, and p is
         the plausibility of the decrypted text.
     """
-    
+
+    if start_key is None:
+        start_key = "".join(random.sample(alphabet, len(alphabet)))
+
     current_key = start_key
 
     decrypted_current = substitute_decrypt(text, current_key)
