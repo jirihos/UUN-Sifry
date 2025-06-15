@@ -57,7 +57,7 @@ def prolom_substitute(text: str, TM_ref: pd.DataFrame, iter: int, start_key: str
             p_best = p_current
 
         # Log progress
-        if (i % 50) == 0:
+        if (i % 1000) == 0:
             print("Iteration", i, "log plausibility:", p_current)
 
     best_decrypted_text = substitute_decrypt(text, best_key)
